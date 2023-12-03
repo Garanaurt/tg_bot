@@ -3,6 +3,8 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from database.db import db
 from keyboards.admin_kb import kb_go_to_main, kb_start_menu, kb_add_accounts
+import asyncio
+
 
 login_code = ''
 
@@ -11,20 +13,33 @@ router = Router()
 
 
 async def delete_chat_mess(bot: Bot, chat):
-    messages = db.db_get_messages_in_chat_admin(chat)
+    try:
+        messages = db.db_get_messages_in_chat_admin(chat)
+    except Exception:
+        await asyncio.sleep(0.5)
+        messages = db.db_get_messages_in_chat_admin(chat)
+
     for msg in messages:
         chat_mess = int(msg[1])
         try:
             await bot.delete_message(chat_id=msg[0], message_id=chat_mess)
         except Exception:
             continue
-    db.db_delete_message_in_chat_admin(chat)
+    try:
+        db.db_delete_message_in_chat_admin(chat)
+    except Exception:
+        await asyncio.sleep(0.5)
+        db.db_delete_message_in_chat_admin(chat)
 
 
 async def save_message(message):
     chat_id = message.chat.id
     message_id = message.message_id
-    db.db_add_message_in_messages_admin(chat_id, message_id)
+    try:
+        db.db_add_message_in_messages_admin(chat_id, message_id)
+    except Exception:
+        await asyncio.sleep(0.5)
+        db.db_add_message_in_messages_admin(chat_id, message_id)
     
 
 @router.callback_query(lambda c: c.data == "cancel_adding")
@@ -49,7 +64,11 @@ async def cmd_star(call: types.CallbackQuery, bot: Bot):
     username = call.from_user.username
     chat_id = call.from_user.id
     await delete_chat_mess(bot, chat_id)
-    off_users = db.db_get_all_users_off()
+    try:
+        off_users = db.db_get_all_users_off()
+    except Exception:
+        await asyncio.sleep(0.5)
+        off_users = db.db_get_all_users_off()
     text = f'Привет, {username}\n'
     if off_users:
         text += 'Не запущены аккаунты c айди '
@@ -66,7 +85,11 @@ async def add_accounts(call: types.CallbackQuery, bot: Bot):
     chat = call.message.chat.id
     await delete_chat_mess(bot, chat)
     text_table = "Имя группы | Между смс | Между запусками\n"
-    groups = db.db_get_groups_info()
+    try:
+        groups = db.db_get_groups_info()
+    except Exception:
+        await asyncio.sleep(0.5)
+        groups = db.db_get_groups_info()
     for group in groups:
         text_table += f"{group[1]} | {group[2]} | {group[3]}\n"
     me = await call.message.answer(f'Тут можно добавить новую группу, добавить в группу пользователя\n\nСейчас есть\n{text_table}',
@@ -78,7 +101,11 @@ async def add_accounts(call: types.CallbackQuery, bot: Bot):
 @router.callback_query(lambda c: c.data == "accs_stat")
 async def accounts_statistic(call: types.CallbackQuery, bot: Bot, state: FSMContext):
     text = 'Имя аккаунта | Всего групп | Добавлено групп за 24 часа | Отправлено смс от запуска\n'
-    users = db.db_get_all_users()
+    try:
+        users = db.db_get_all_users()
+    except Exception:
+        await asyncio.sleep(0.5)
+        users = db.db_get_all_users()
     for user in users:
         try:
             new_groups = user[6].split(':')
@@ -88,7 +115,8 @@ async def accounts_statistic(call: types.CallbackQuery, bot: Bot, state: FSMCont
             old_groups = user[9].split(':')
         except Exception:
             old_groups = []
-        text += f'{user[8]} | {len(new_groups)} | {len(new_groups) - len(old_groups)} | {user[11]}'
+        sms_cnt = 'ошибка' if user[11] == None else user[11]
+        text += f'{user[8]} | {len(new_groups)} | {len(new_groups) - len(old_groups)} | {sms_cnt}\n'
 
     me = await call.message.answer(text, reply_markup=kb_go_to_main())
     await save_message(me)

@@ -174,6 +174,7 @@ class DbSpamer:
     
 
     def db_set_user_stop(self, user_id):
+        print('db_stop')
         self.cursor.execute("UPDATE accounts SET running = FALSE WHERE id = ?", (user_id,))
         self.conn.commit()
         return True

@@ -4,6 +4,7 @@ from aiogram.filters.state import State, StatesGroup
 from database.db import db
 from keyboards.admin_kb import kb_go_to_accounts, kb_go_to_main, kb_cancel_but
 from .hd_admin import delete_chat_mess, save_message
+import asyncio
 
 login_code = ''
 
@@ -29,7 +30,11 @@ async def add_accounts(call: types.CallbackQuery, bot: Bot, state: FSMContext):
 @router.message(AddGroupStates.NAME)
 async def name_processing_group(message: types.Message):
     name = message.text
-    result = db.db_add_group(name)
+    try:
+        result = db.db_add_group(name)
+    except Exception:
+        await asyncio.sleep(0.5)
+        result = db.db_add_group(name)
     if result:
         me = await message.answer(f'Добавлено',
                                reply_markup=kb_go_to_main())
@@ -38,8 +43,12 @@ async def name_processing_group(message: types.Message):
 
 
 @router.callback_query(lambda c: c.data == "del_group")
-async def delete_group(call: types.CallbackQuery, bot: Bot, state: FSMContext):
-    groups = db.db_get_groups_info()
+async def delete_group(call: types.CallbackQuery, state: FSMContext):
+    try:
+        groups = db.db_get_groups_info()
+    except Exception:
+        await asyncio.sleep(0.5)
+        groups = db.db_get_groups_info()
     await state.set_state(DelGroupStates.WaitId)
     tex = '<b>Группы, чтобы удалить группу пришли ее айди, можно удалить только пустую группу</b>\n'
     for group in groups:
@@ -58,12 +67,20 @@ async def processing_delete_group(message: types.Message, state: FSMContext):
         await save_message(me)
         return
     await state.clear()
-    user_in_group = db.db_check_user_with_group(text)
+    try:
+        user_in_group = db.db_check_user_with_group(text)
+    except Exception:
+        await asyncio.sleep(0.5)
+        user_in_group = db.db_check_user_with_group(text)
     if user_in_group:
         me = await message.answer('В этой группе есть аккаунты, удаление невозможно', reply_markup=kb_cancel_but())
         await save_message(me)
         return
-    result = db.db_del_group_with_id(text)
+    try:
+        result = db.db_del_group_with_id(text)
+    except Exception:
+        await asyncio.sleep(0.5)
+        result = db.db_del_group_with_id(text)
     if result:
         me = await message.answer(f'Группа с айди {text} удалена', reply_markup=kb_go_to_main())
         await save_message(me)

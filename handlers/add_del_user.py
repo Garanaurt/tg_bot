@@ -32,7 +32,11 @@ class AddUserStates(StatesGroup):
 async def add_user(call: types.CallbackQuery, bot: Bot, state: FSMContext):
     chat = call.message.chat.id
     await delete_chat_mess(bot, chat)
-    groups = db.db_get_groups_info()
+    try:
+        groups = db.db_get_groups_info()
+    except Exception:
+        await asyncio.sleep(0.5)
+        groups = db.db_get_groups_info()
     me = await call.message.answer(f'Выбери к какой группе добавить этот аккаунт:',
                                reply_markup=kb_set_group(groups))
     await save_message(me)
@@ -105,13 +109,26 @@ async def login_to_acc(message: types.Message, state: FSMContext):
     except Exception as e:
         user_data['username'] = None
         print(e)
-    db.db_add_user(user_data)
-    user = db.db_get_user_info_where_phone(user_data['phone'])
+    try:
+        db.db_add_user(user_data)
+    except Exception:
+        await asyncio.sleep(0.5)
+        db.db_add_user(user_data)
+    try:
+        user = db.db_get_user_info_where_phone(user_data['phone'])
+    except Exception:
+        await asyncio.sleep(0.5)
+        user = db.db_get_user_info_where_phone(user_data['phone'])
     await client.disconnect()
     login_code = ''
     await state.clear()
-    #asyncio.create_task(userbot_main(user[0]))
-    me = await message.answer(f'Юзер добавлен', reply_markup=kb_go_to_accounts())
+    try:
+        db.db_set_user_start(user[0])
+    except Exception:
+        await asyncio.sleep(0.5)
+        db.db_set_user_start(user[0])
+    asyncio.create_task(userbot_main(user[0]))
+    me = await message.answer(f'Юзер добавлен и запущен', reply_markup=kb_go_to_accounts())
     await save_message(me)
     
 
@@ -120,7 +137,11 @@ async def login_to_acc(message: types.Message, state: FSMContext):
 
 @router.callback_query(lambda c: c.data == "del_user")
 async def delete_user(call: types.CallbackQuery, bot: Bot, state: FSMContext):
-    users = db.db_get_all_users()
+    try:
+        users = db.db_get_all_users()
+    except Exception:
+        await asyncio.sleep(0.5)
+        users = db.db_get_all_users()
     if not users:
         pass
     groups = {}
@@ -161,7 +182,11 @@ async def processing_del_user(message: types.Message, state: FSMContext):
         await save_message(me)
         return
     await state.clear()
-    result = db.db_del_user_with_id(text)
+    try:
+        result = db.db_del_user_with_id(text)
+    except Exception:
+        await asyncio.sleep(0.5)
+        result = db.db_del_user_with_id(text)
     if result:
         me = await message.answer(f'Юзер с айди {text} удален', reply_markup=kb_go_to_main())
         await save_message(me)
