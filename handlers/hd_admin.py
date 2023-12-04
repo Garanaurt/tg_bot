@@ -1,7 +1,7 @@
 from aiogram import Router, Bot, F, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from database.db import db
+from database.db import DbSpamer
 from keyboards.admin_kb import kb_go_to_main, kb_start_menu, kb_add_accounts
 import asyncio
 
@@ -14,10 +14,12 @@ router = Router()
 
 async def delete_chat_mess(bot: Bot, chat):
     try:
-        messages = db.db_get_messages_in_chat_admin(chat)
+        with DbSpamer() as db:
+            messages = db.db_get_messages_in_chat_admin(chat)
     except Exception:
         await asyncio.sleep(0.5)
-        messages = db.db_get_messages_in_chat_admin(chat)
+        with DbSpamer() as db:
+            messages = db.db_get_messages_in_chat_admin(chat)
 
     for msg in messages:
         chat_mess = int(msg[1])
@@ -26,20 +28,24 @@ async def delete_chat_mess(bot: Bot, chat):
         except Exception:
             continue
     try:
-        db.db_delete_message_in_chat_admin(chat)
+        with DbSpamer() as db:
+            db.db_delete_message_in_chat_admin(chat)
     except Exception:
         await asyncio.sleep(0.5)
-        db.db_delete_message_in_chat_admin(chat)
+        with DbSpamer() as db:
+            db.db_delete_message_in_chat_admin(chat)
 
 
 async def save_message(message):
     chat_id = message.chat.id
     message_id = message.message_id
     try:
-        db.db_add_message_in_messages_admin(chat_id, message_id)
+        with DbSpamer() as db:
+            db.db_add_message_in_messages_admin(chat_id, message_id)
     except Exception:
         await asyncio.sleep(0.5)
-        db.db_add_message_in_messages_admin(chat_id, message_id)
+        with DbSpamer() as db:
+            db.db_add_message_in_messages_admin(chat_id, message_id)
     
 
 @router.callback_query(lambda c: c.data == "cancel_adding")
@@ -65,10 +71,12 @@ async def cmd_star(call: types.CallbackQuery, bot: Bot):
     chat_id = call.from_user.id
     await delete_chat_mess(bot, chat_id)
     try:
-        off_users = db.db_get_all_users_off()
+        with DbSpamer() as db:
+            off_users = db.db_get_all_users_off()
     except Exception:
         await asyncio.sleep(0.5)
-        off_users = db.db_get_all_users_off()
+        with DbSpamer() as db:
+            off_users = db.db_get_all_users_off()
     text = f'Привет, {username}\n'
     if off_users:
         text += 'Не запущены аккаунты c айди '
@@ -86,10 +94,12 @@ async def add_accounts(call: types.CallbackQuery, bot: Bot):
     await delete_chat_mess(bot, chat)
     text_table = "Имя группы | Между смс | Между запусками\n"
     try:
-        groups = db.db_get_groups_info()
+        with DbSpamer() as db:
+            groups = db.db_get_groups_info()
     except Exception:
         await asyncio.sleep(0.5)
-        groups = db.db_get_groups_info()
+        with DbSpamer() as db:
+            groups = db.db_get_groups_info()
     for group in groups:
         text_table += f"{group[1]} | {group[2]} | {group[3]}\n"
     me = await call.message.answer(f'Тут можно добавить новую группу, добавить в группу пользователя\n\nСейчас есть\n{text_table}',
@@ -102,10 +112,12 @@ async def add_accounts(call: types.CallbackQuery, bot: Bot):
 async def accounts_statistic(call: types.CallbackQuery, bot: Bot, state: FSMContext):
     text = 'Имя аккаунта | Всего групп | Добавлено групп за 24 часа | Отправлено смс от запуска\n'
     try:
-        users = db.db_get_all_users()
+        with DbSpamer() as db:
+            users = db.db_get_all_users()
     except Exception:
         await asyncio.sleep(0.5)
-        users = db.db_get_all_users()
+        with DbSpamer() as db:
+            users = db.db_get_all_users()
     for user in users:
         try:
             new_groups = user[6].split(':')

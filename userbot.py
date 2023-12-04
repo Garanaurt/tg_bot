@@ -3,7 +3,7 @@ from telethon.tl.functions.channels import GetParticipantsRequest
 from telethon.tl.types import ChannelParticipantsSearch, UserStatusRecently, UserStatusOnline
 from telethon.errors.rpcerrorlist import FloodWaitError, UserBannedInChannelError, ChatWriteForbiddenError, SlowModeWaitError
 import asyncio
-from database.db import db
+from database.db import DbSpamer
 from datetime import datetime, timedelta
 import re
 
@@ -26,20 +26,24 @@ class UserBot:
             else:
                 self.client = TelegramClient(self.session_name, self.api_id, self.api_hash)
             try:
-                user_data = db.db_get_user_info(self.user_id)
+                with DbSpamer() as db:
+                    user_data = db.db_get_user_info(self.user_id)
             except Exception:
                 await asyncio.sleep(0.5)
-                user_data = db.db_get_user_info(self.user_id)
+                with DbSpamer() as db:
+                    user_data = db.db_get_user_info(self.user_id)
             try:
                 await self.client.start(user_data[5], code_callback=lambda: None)
                 print('connected')
             except OSError:
                 print(f"Error during client initialization connect: {e}")
                 try:
-                    db.db_set_user_stop(self.user_id)
+                    with DbSpamer() as db:
+                        db.db_set_user_stop(self.user_id)
                 except Exception:
                     await asyncio.sleep(0.5)
-                    db.db_set_user_stop(self.user_id)
+                    with DbSpamer() as db:
+                        db.db_set_user_stop(self.user_id)
                 return False
             me = await self.client.get_me()
             if me:
@@ -48,10 +52,12 @@ class UserBot:
         except Exception as e:
             print(f"Error during client initialization: {e}")
             try:
-                db.db_set_user_stop(self.user_id)
+                with DbSpamer() as db:
+                    db.db_set_user_stop(self.user_id)
             except Exception:
                 await asyncio.sleep(0.5)
-                db.db_set_user_stop(self.user_id)
+                with DbSpamer() as db:
+                    db.db_set_user_stop(self.user_id)
             return False
 
 
@@ -63,10 +69,12 @@ class UserBot:
         buttons_in_message = messa.reply_markup
         for group in groups:
             try:
-                user_running = db.db_get_user_info(user_id)[10]
+                with DbSpamer() as db:
+                    user_running = db.db_get_user_info(user_id)[10]
             except Exception:
                 await asyncio.sleep(0.5)
-                user_running = db.db_get_user_info(user_id)[10]
+                with DbSpamer() as db:
+                    user_running = db.db_get_user_info(user_id)[10]
             if not user_running:
                 print('ostanovlen')
                 self.client.disconnect()
@@ -115,31 +123,39 @@ class UserBot:
                 await self.send_msg_to_spambot()
             except ConnectionError:
                 try:
-                    db.db_set_user_stop(user_id)
+                    with DbSpamer() as db:
+                        db.db_set_user_stop(user_id)
                 except Exception:
                     await asyncio.sleep(0.5)
-                    db.db_set_user_stop(user_id)
+                    with DbSpamer() as db:
+                        db.db_set_user_stop(user_id)
             except Exception as e:
                 print("ошибка", e)
             await asyncio.sleep(sleep_time)
             if cnt % 3 == 0:
                 try:
-                    user_cnt = db.db_get_user_info(user_id)[11]
+                    with DbSpamer() as db:
+                        user_cnt = db.db_get_user_info(user_id)[11]
                 except Exception:
                     await asyncio.sleep(0.5)
-                    user_cnt = db.db_get_user_info(user_id)[11]
+                    with DbSpamer() as db:
+                        user_cnt = db.db_get_user_info(user_id)[11]
                 if user_cnt == None:
                     try:
-                        db.db_update_count(user_id, cnt)
+                        with DbSpamer() as db:
+                            db.db_update_count(user_id, cnt)
                     except Exception:
                         await asyncio.sleep(0.5)
-                        db.db_update_count(user_id, cnt)
+                        with DbSpamer() as db:
+                            db.db_update_count(user_id, cnt)
                 else:
                     try:
-                        db.db_update_count(user_id, int(user_cnt) + cnt)
+                        with DbSpamer() as db:
+                            db.db_update_count(user_id, int(user_cnt) + cnt)
                     except Exception:
                         await asyncio.sleep(0.5)
-                        db.db_update_count(user_id, int(user_cnt) + cnt)
+                        with DbSpamer() as db:
+                            db.db_update_count(user_id, int(user_cnt) + cnt)
                 cnt = 0
             
 
@@ -216,34 +232,42 @@ class UserBot:
                 user_groups_id.append(group.id)
             groups_string = ':'.join(map(str, user_groups_id))
             try:
-                user_data = db.db_get_user_info(self.user_id)
+                with DbSpamer() as db:
+                    user_data = db.db_get_user_info(self.user_id)
             except Exception:
                 await asyncio.sleep(0.5)
-                user_data = db.db_get_user_info(self.user_id)
+                with DbSpamer() as db:
+                    user_data = db.db_get_user_info(self.user_id)
             if user_data[6] is None:
                 try:
-                    db.db_set_user_dialogs(groups_string, self.user_id)
+                    with DbSpamer() as db:
+                        db.db_set_user_dialogs(groups_string, self.user_id)
                 except Exception:
                     await asyncio.sleep(0.5)
-                    db.db_set_user_dialogs(groups_string, self.user_id)
+                    with DbSpamer() as db:
+                        db.db_set_user_dialogs(groups_string, self.user_id)
             else:
                 try:
-                    db.db_set_user_dialogs_old(user_data[6], self.user_id)
-                    db.db_set_user_dialogs(groups_string, self.user_id)
+                    with DbSpamer() as db:
+                        db.db_set_user_dialogs_old(user_data[6], self.user_id)
+                        db.db_set_user_dialogs(groups_string, self.user_id)
                 except Exception:
                     await asyncio.sleep(0.5)
-                    db.db_set_user_dialogs_old(user_data[6], self.user_id)
-                    db.db_set_user_dialogs(groups_string, self.user_id)
+                    with DbSpamer() as db:
+                        db.db_set_user_dialogs_old(user_data[6], self.user_id)
+                        db.db_set_user_dialogs(groups_string, self.user_id)
         except ConnectionError:
             return False
 
 
 async def userbot_main(user_id):
     try:
-        user = db.db_get_user_info(user_id)
+        with DbSpamer() as db:
+            user = db.db_get_user_info(user_id)
     except Exception:
         await asyncio.sleep(0.5)
-        user = db.db_get_user_info(user_id)
+        with DbSpamer() as db:
+            user = db.db_get_user_info(user_id)
     bot = UserBot(user[2], user[3], user[5], user[0], user[4])
     started = await bot.start_client()
     if not started:
@@ -252,18 +276,22 @@ async def userbot_main(user_id):
     task = asyncio.create_task(bot.update_statistics_periodically())
     print('upd periodic', task)
     try:
-        db.db_update_count(user_id, 0)
+        with DbSpamer() as db:
+            db.db_update_count(user_id, 0)
     except Exception:
         await asyncio.sleep(0.5)
-        db.db_update_count(user_id, 0)
+        with DbSpamer() as db:
+            db.db_update_count(user_id, 0)
     while user[10]:
             try:
-                user_info = db.db_get_user_info(user_id)
-                group_info = db.db_get_group_info(user_info[1])
+                with DbSpamer() as db:
+                    user_info = db.db_get_user_info(user_id)
+                    group_info = db.db_get_group_info(user_info[1])
             except Exception:
                 await asyncio.sleep(0.5)
-                user_info = db.db_get_user_info(user_id)
-                group_info = db.db_get_group_info(user_info[1])
+                with DbSpamer() as db:
+                    user_info = db.db_get_user_info(user_id)
+                    group_info = db.db_get_group_info(user_info[1])
             sleep_time = group_info[2]
             online = group_info[4]
             recently = group_info[5]
@@ -276,10 +304,12 @@ async def userbot_main(user_id):
             await asyncio.sleep(group_info[3])
     else:
         try:
-            db.db_update_count(user_id, 0)
+            with DbSpamer() as db:
+                db.db_update_count(user_id, 0)
         except Exception:
             await asyncio.sleep(0.5)
-            db.db_update_count(user_id, 0)
+            with DbSpamer() as db:
+                db.db_update_count(user_id, 0)
         bot.disconnect()
 
 
@@ -287,16 +317,20 @@ async def run_bots():
     print('oookey leets gooo')
     bots_data = []
     try:
-        users_data = db.db_get_all_users()
+        with DbSpamer() as db:
+            users_data = db.db_get_all_users()
     except Exception:
         await asyncio.sleep(0.5)
-        users_data = db.db_get_all_users()
+        with DbSpamer() as db:
+            users_data = db.db_get_all_users()
     for user in users_data:
         try:
-            db.db_set_user_start(user[0])
+            with DbSpamer() as db:
+                db.db_set_user_start(user[0])
         except Exception:
             await asyncio.sleep(0.5)
-            db.db_set_user_start(user[0])
+            with DbSpamer() as db:
+                db.db_set_user_start(user[0])
         bots_data.append({'user_id': user[0]})
     tasks = [userbot_main(bot['user_id']) for bot in bots_data]
     await asyncio.gather(*tasks)

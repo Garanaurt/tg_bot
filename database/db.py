@@ -6,16 +6,18 @@ db_path = 'database.db'
 
 class DbSpamer:
     def __init__(self) -> None:
-        self.db_path = None
+        self.db_path = db_path
 
-    def db_initialize(self):
+    def __enter__(self):
         print('Database was started')
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
+        return self
 
-    def db_close_conn(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         print('Database was closed')
         self.conn.close()
+
 
     
     def db_add_message_in_messages_admin(self, chat_id, message_id):
@@ -243,14 +245,13 @@ class DbSpamer:
         print('Table admin_messages was created')
 
 
-db = DbSpamer()
+#db = DbSpamer()
 
 
 if not os.path.exists(db_path):
-    db.db_path = db_path
-    db.db_initialize()
+    db = DbSpamer()
     db.db_check_and_create_tables()
     db.db_close_conn()
 
-db.db_path = db_path
-db.db_initialize()
+#db.db_path = db_path
+#db.db_initialize()

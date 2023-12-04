@@ -1,5 +1,5 @@
 from aiogram import types
-from database.db import db
+from database.db import DbSpamer
 import sys
 import time
 
@@ -77,10 +77,12 @@ def kb_change_group(groups):
 
 def kb_change_group_with_id(group_id):
     try:
-        group_info = db.db_get_group_info(group_id)
+        with DbSpamer() as db:
+            group_info = db.db_get_group_info(group_id)
     except Exception:
         time.sleep(0.5)
-        group_info = db.db_get_group_info(group_id)
+        with DbSpamer() as db:
+            group_info = db.db_get_group_info(group_id)
     keys = [
         [types.InlineKeyboardButton(text='Изменить название', callback_data=f'change_name_{group_id}')],
         [types.InlineKeyboardButton(text='Изменить время между смс', callback_data=f"change_sms_{group_id}")],

@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters.state import State, StatesGroup
 from telethon.sync import TelegramClient
 from telethon.errors import PhoneNumberBannedError
-from database.db import db
+from database.db import DbSpamer
 from .hd_admin import save_message
 from userbot import userbot_main
 from keyboards.admin_kb import kb_go_to_main, kb_change_user_with_id, kb_cancel_but
@@ -32,10 +32,12 @@ class RestartStates(StatesGroup):
 @router.callback_query(lambda c: c.data == "users_settings")
 async def user_settings(call: types.CallbackQuery, bot: Bot, state: FSMContext):
     try:
-        users = db.db_get_all_users()
+        with DbSpamer() as db:
+            users = db.db_get_all_users()
     except Exception:
         await asyncio.sleep(0.5)
-        users = db.db_get_all_users()
+        with DbSpamer() as db:
+            users = db.db_get_all_users()
     if not users:
         me = await call.message.answer(text='Нет юзеров', reply_markup=kb_cancel_but(), parse_mode='HTML')
         await save_message(me)
@@ -71,10 +73,12 @@ async def user_settings(call: types.CallbackQuery, bot: Bot, state: FSMContext):
 async def processing_change_user(message: types.Message, state: FSMContext):
     user_id = message.text
     try:
-        user_info = db.db_get_user_info(user_id)
+        with DbSpamer() as db:
+            user_info = db.db_get_user_info(user_id)
     except Exception:
         await asyncio.sleep(0.5)
-        user_info = db.db_get_user_info(user_id)
+        with DbSpamer() as db:
+            user_info = db.db_get_user_info(user_id)
     started = 'Да' if user_info[10] == 1 else 'Нет'
     mes = f'Id:{user_info[0]}, Тел:{user_info[5]}, Имя:{user_info[8]}\n'
     try:
@@ -91,10 +95,12 @@ async def processing_change_user(message: types.Message, state: FSMContext):
 async def change_user_group(call: types.CallbackQuery, bot: Bot, state: FSMContext):
     user_id = call.data.split('_')[3]
     try:
-        groups = db.db_get_groups_info()
+        with DbSpamer() as db:
+            groups = db.db_get_groups_info()
     except Exception:
         await asyncio.sleep(0.5)
-        groups = db.db_get_groups_info()
+        with DbSpamer() as db:
+            groups = db.db_get_groups_info()
     await state.set_state(ChangeUserSettings.Group)
     await state.update_data(user_id=user_id)
     text = 'Для смены группы пользователя пришлите ее айди \n\nId | Название | Между смс | Между стартом\n'
@@ -113,10 +119,12 @@ async def processing_change_user_group(message: types.Message, state: FSMContext
         await save_message(me)
         return
     try:
-        group = db.db_get_group_with_id(new_group)
+        with DbSpamer() as db:
+            group = db.db_get_group_with_id(new_group)
     except Exception:
         await asyncio.sleep(0.5)
-        group = db.db_get_group_with_id(new_group)
+        with DbSpamer() as db:
+            group = db.db_get_group_with_id(new_group)
     if not group:
         me = await message.answer("Группы с таким айди не существует, пришли другой айди", reply_markup=kb_cancel_but())
         await save_message(me)
@@ -124,10 +132,12 @@ async def processing_change_user_group(message: types.Message, state: FSMContext
     user_data = await state.get_data()
     user_id = user_data['user_id']
     try:
-        result = db.db_set_user_group(user_id, new_group)
+        with DbSpamer() as db:
+            result = db.db_set_user_group(user_id, new_group)
     except Exception:
         await asyncio.sleep(0.5)
-        result = db.db_set_user_group(user_id, new_group)
+        with DbSpamer() as db:
+            result = db.db_set_user_group(user_id, new_group)
     await state.clear()
     if result:
         me = await message.answer("Группа изменена", reply_markup=kb_cancel_but())
@@ -152,10 +162,12 @@ async def processing_change_user_proxy(message: types.Message, state: FSMContext
     user_data = await state.get_data()
     user_id = user_data['user_id']
     try:
-        result = db.db_set_user_proxy(user_id, new_group)
+        with DbSpamer() as db:
+            result = db.db_set_user_proxy(user_id, new_group)
     except Exception:
         await asyncio.sleep(0.5)
-        result = db.db_set_user_proxy(user_id, new_group)
+        with DbSpamer() as db:
+            result = db.db_set_user_proxy(user_id, new_group)
     await state.clear()
     if result:
         me = await message.answer("Прокси изменены", reply_markup=kb_cancel_but())
@@ -167,10 +179,12 @@ async def processing_change_user_proxy(message: types.Message, state: FSMContext
 async def change_user_restart(call: types.CallbackQuery, bot: Bot, state: FSMContext):
     user_id = call.data.split('_')[3]
     try:
-        user_info = db.db_get_user_info(user_id)
+        with DbSpamer() as db:
+            user_info = db.db_get_user_info(user_id)
     except Exception:
         await asyncio.sleep(0.5)
-        user_info = db.db_get_user_info(user_id)
+        with DbSpamer() as db:
+            user_info = db.db_get_user_info(user_id)
     print('change user restart', user_info)
     current_directory = os.path.dirname(os.path.abspath(__file__))
     parent_directory = os.path.join(current_directory, os.pardir)
@@ -192,10 +206,12 @@ async def processing_restart_user(call: types.CallbackQuery, bot: Bot, state: FS
     chat_id = call.from_user.id
     phon = user_info[5]
     try:
-        db.db_update_count(user_info[0], 0)
+        with DbSpamer() as db:
+            db.db_update_count(user_info[0], 0)
     except Exception:
         await asyncio.sleep(0.5)
-        db.db_update_count(user_info[0], 0)
+        with DbSpamer() as db:
+            db.db_update_count(user_info[0], 0)
     client = TelegramClient(user_info[5], user_info[2], user_info[3])
     try:
         await client.connect()
@@ -218,10 +234,12 @@ async def processing_restart_acc(message: types.Message, state: FSMContext):
     login_code = message.text
     user_data = await state.get_data()
     try:
-        user_info = db.db_get_user_info(user_data['user_id'])
+        with DbSpamer() as db:
+            user_info = db.db_get_user_info(user_data['user_id'])
     except Exception:
         await asyncio.sleep(0.5)
-        user_info = db.db_get_user_info(user_data['user_id'])
+        with DbSpamer() as db:
+            user_info = db.db_get_user_info(user_data['user_id'])
     phon = user_info[5]
     client = TelegramClient(user_info[5], user_info[2], user_info[3])
     await client.start(phone=f'+{phon}', code_callback=code_callback)
@@ -243,12 +261,14 @@ async def processing_restart_acc(message: types.Message, state: FSMContext):
 async def change_user_stop(call: types.CallbackQuery, bot: Bot, state: FSMContext):
     user_id = call.data.split('_')[3]
     try:
-        db.db_set_user_stop(user_id)
-        db.db_update_count(user_id, 0)
+        with DbSpamer() as db:
+            db.db_set_user_stop(user_id)
+            db.db_update_count(user_id, 0)
     except Exception:
         await asyncio.sleep(0.5)
-        db.db_set_user_stop(user_id)
-        db.db_update_count(user_id, 0)
+        with DbSpamer() as db:
+            db.db_set_user_stop(user_id)
+            db.db_update_count(user_id, 0)
     me = await call.message.answer(f'Юзер выключен', reply_markup=kb_go_to_main())
     await save_message(me)
 
@@ -258,18 +278,22 @@ async def change_user_stop(call: types.CallbackQuery, bot: Bot, state: FSMContex
 async def change_user_stop(call: types.CallbackQuery):
     user_id = call.data.split('_')[3]
     try:
-        db.db_set_user_start(user_id)
+        with DbSpamer() as db:
+            db.db_set_user_start(user_id)
     except Exception:
         await asyncio.sleep(0.5)
-        db.db_set_user_start(user_id)
+        with DbSpamer() as db:
+            db.db_set_user_start(user_id)
     asyncio.create_task(userbot_main(user_id))
     print('1')
     await asyncio.sleep(2)
     try:
-        user = db.db_get_user_info(user_id)
+        with DbSpamer() as db:
+            user = db.db_get_user_info(user_id)
     except Exception:
         await asyncio.sleep(0.5)
-        user = db.db_get_user_info(user_id)
+        with DbSpamer() as db:
+            user = db.db_get_user_info(user_id)
     if user[10] == 0:
         me = await call.message.answer(f'Юзер не запускается, подожди минуту и попробуй еще, если повторяется перевойди в акк', reply_markup=kb_go_to_main())
         await save_message(me)

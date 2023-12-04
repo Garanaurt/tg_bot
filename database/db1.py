@@ -7,6 +7,7 @@ db_path = 'database.db'
 class DbSpamer:
     def __init__(self) -> None:
         self.db_path = None
+        self.db_initialize()
 
     async def db_initialize(self):
         print('Database was started')
