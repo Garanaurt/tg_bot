@@ -5,7 +5,7 @@ from userbot import run_bots
 from sqlite3 import OperationalError
 
 
-TOKEN = "6979372433:AAG4Z_U-k6YeGiNGBLAA8qUmh449eoa4mzE"
+TOKEN = "697934mzE"
 
 
 #start bot
